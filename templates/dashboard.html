@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08120f">
+  <meta name="description" content="Harmony Watcher 공동주택 층간소음 통합 관제 센터">
+  <title>Harmony Watcher · 통합 관제 센터</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+</head>
+<body data-demo-mode="{{ 'true' if demo_mode else 'false' }}">
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="주요 메뉴">
+      <a class="brand" href="#overview" aria-label="Harmony Watcher 홈">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+        <span class="brand-copy">
+          <strong>Harmony</strong>
+          <small>WATCHER</small>
+        </span>
+      </a>
+
+      <div class="site-card">
+        <span class="eyebrow">현재 관제 단지</span>
+        <strong>202동 통합 관제</strong>
+        <span class="site-status"><i></i> 센서 연결 정상</span>
+      </div>
+
+      <nav class="nav-list">
+        <button class="nav-item is-active" type="button" data-action="overview">
+          <span class="nav-icon" aria-hidden="true">⌂</span>
+          <span>통합 현황</span>
+        </button>
+        <button class="nav-item" type="button" data-action="live">
+          <span class="nav-icon" aria-hidden="true">⌁</span>
+          <span>실시간 모니터링</span>
+        </button>
+        <button class="nav-item" type="button" data-action="incident">
+          <span class="nav-icon" aria-hidden="true">!</span>
+          <span>이상 감지</span>
+          <b class="nav-count">1</b>
+        </button>
+        <button class="nav-item" type="button" data-action="analysis">
+          <span class="nav-icon" aria-hidden="true">✦</span>
+          <span>AI 분석</span>
+        </button>
+        <button class="nav-item" type="button" data-action="reports">
+          <span class="nav-icon" aria-hidden="true">▥</span>
+          <span>운영 리포트</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <button class="nav-item" type="button" data-action="devices">
+          <span class="nav-icon" aria-hidden="true">◎</span>
+          <span>장치 관리</span>
+        </button>
+        <button class="nav-item" type="button" data-action="settings">
+          <span class="nav-icon" aria-hidden="true">⚙</span>
+          <span>환경 설정</span>
+        </button>
+        <p>Harmony Solution<br>Control Center v2.0</p>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <button class="menu-toggle" id="menuToggle" type="button" aria-label="메뉴 열기" aria-expanded="false">☰</button>
+        <div class="topbar-context">
+          <span class="live-dot" aria-hidden="true"></span>
+          <div>
+            <strong>관제 시스템 정상 운영 중</strong>
+            <small>20개 측정 지점 연결</small>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span class="demo-pill" id="demoPill">DEMO DATA</span>
+          <div class="updated-at">
+            <span>마지막 업데이트</span>
+            <strong id="updateTime">데이터 연결 중</strong>
+          </div>
+          <button class="operator" type="button" data-action="settings" aria-label="관리자 설정">관리</button>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <section class="view is-active" id="dashboardView" aria-labelledby="overviewTitle">
+          <div class="page-heading" id="overview">
+            <div>
+              <span class="eyebrow">HARMONY CONTROL CENTER</span>
+              <h1 id="overviewTitle">공간의 평온을 지키는<br><em>실시간 관제 현황</em></h1>
+              <p>소음과 미세 진동을 함께 분석해 이상 징후와 필요한 조치를 한눈에 확인합니다.</p>
+            </div>
+            <div class="heading-controls">
+              <label>
+                <span>동 선택</span>
+                <select id="bldgSelect" aria-label="관제 동 선택">
+                  <option value="202">202동</option>
+                </select>
+              </label>
+              <label>
+                <span>라인 선택</span>
+                <select id="lineSelect" aria-label="관제 라인 선택">
+                  <option value="1">1호 라인</option>
+                  <option value="2">2호 라인</option>
+                  <option value="3" selected>3호 라인</option>
+                  <option value="4">4호 라인</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="demo-notice" id="demoNotice" role="note">
+            <span>i</span>
+            <p><strong>디자인 검토용 데모입니다.</strong> 센서가 연결되지 않은 세대는 예시값으로 표시되며, 실제 안내문은 발송되지 않습니다.</p>
+            <button type="button" aria-label="데모 안내 닫기" id="closeDemoNotice">×</button>
+          </div>
+
+          <div class="kpi-grid" aria-label="핵심 관제 지표">
+            <article class="kpi-card kpi-status">
+              <div class="kpi-icon">!</div>
+              <div>
+                <span>현재 관제 상태</span>
+                <strong>주의 필요</strong>
+                <small><b id="dangerCount">1</b>건 심각 · <b id="warningCount">1</b>건 주의</small>
+              </div>
+              <span class="trend trend-alert">즉시 확인</span>
+            </article>
+            <article class="kpi-card">
+              <div class="kpi-icon mint">dB</div>
+              <div>
+                <span>오늘 최고 소음</span>
+                <strong><b id="maxNoiseKpi">82</b> <small>dB</small></strong>
+                <small>23:17 · 202동 503호</small>
+              </div>
+              <span class="trend">기준 초과</span>
+            </article>
+            <article class="kpi-card">
+              <div class="kpi-icon violet">Hz</div>
+              <div>
+                <span>주요 감지 대역</span>
+                <strong><b id="frequencyKpi">120</b> <small>Hz 이하</small></strong>
+                <small>저주파 충격 패턴</small>
+              </div>
+              <span class="trend trend-ai">AI 분석</span>
+            </article>
+            <article class="kpi-card">
+              <div class="kpi-icon green">✓</div>
+              <div>
+                <span>측정 장치</span>
+                <strong>20/20 <small>연결</small></strong>
+                <small>최근 수신 지연 없음</small>
+              </div>
+              <span class="trend trend-good">정상</span>
+            </article>
+          </div>
+
+          <div class="overview-grid">
+            <article class="panel unit-panel" id="liveMonitoring">
+              <div class="panel-heading">
+                <div>
+                  <span class="eyebrow">LIVE MONITORING</span>
+                  <h2>세대별 실시간 상태</h2>
+                </div>
+                <div class="legend" aria-label="상태 범례">
+                  <span><i class="good"></i>양호</span>
+                  <span><i class="warn"></i>주의</span>
+                  <span><i class="danger"></i>심각</span>
+                </div>
+              </div>
+              <div class="unit-map-head">
+                <span id="unitMapTitle">202동 · 3호 라인</span>
+                <small>세대를 선택하면 상세 분석을 확인할 수 있습니다.</small>
+              </div>
+              <div class="unit-map" id="unitGrid" aria-live="polite"></div>
+            </article>
+
+            <article class="panel incident-panel" id="incidentPanel">
+              <div class="panel-heading">
+                <div>
+                  <span class="eyebrow alert">PRIORITY INCIDENT</span>
+                  <h2>우선 확인 필요</h2>
+                </div>
+                <span class="incident-badge">심각</span>
+              </div>
+              <div class="incident-visual" aria-hidden="true">
+                <span class="pulse-ring ring-one"></span>
+                <span class="pulse-ring ring-two"></span>
+                <span class="pulse-core">82<small>dB</small></span>
+              </div>
+              <div class="incident-copy">
+                <strong>202동 503호</strong>
+                <h3>야간 충격성 소음의<br>반복 패턴이 감지됐습니다.</h3>
+                <p>저주파 소음과 미세 진동이 같은 주기로 발생했습니다. 위층 영향 가능성을 추가 확인하세요.</p>
+              </div>
+              <div class="incident-meta">
+                <span><small>발생 시각</small>23:17</span>
+                <span><small>지속 시간</small>58초</span>
+                <span><small>AI 신뢰도</small>92%</span>
+              </div>
+              <button class="primary-button" type="button" data-open-report="202-503">
+                AI 심층 분석 확인 <span>→</span>
+              </button>
+            </article>
+          </div>
+
+          <section class="analytics-section" id="analyticsSection" aria-labelledby="analyticsTitle">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">DAILY INSIGHT</span>
+                <h2 id="analyticsTitle">오늘의 발생 경향</h2>
+              </div>
+              <span class="section-note">최근 24시간 기준</span>
+            </div>
+            <div class="analytics-grid">
+              <article class="panel chart-panel compact">
+                <div class="chart-heading">
+                  <div><h3>소음 유형</h3><p>감지된 패턴의 구성</p></div>
+                  <strong>24건</strong>
+                </div>
+                <div class="chart-wrap donut-wrap"><canvas id="typeChart"></canvas></div>
+              </article>
+              <article class="panel chart-panel compact">
+                <div class="chart-heading">
+                  <div><h3>시간대별 발생</h3><p>야간 집중도 63%</p></div>
+                  <strong class="violet-text">+18%</strong>
+                </div>
+                <div class="chart-wrap"><canvas id="timeChart"></canvas></div>
+              </article>
+              <article class="panel chart-panel wide">
+                <div class="chart-heading">
+                  <div><h3 id="barChartTitle">3호 라인 세대별 최고 소음</h3><p>상태 기준으로 색상이 구분됩니다.</p></div>
+                  <span class="data-label">dB</span>
+                </div>
+                <div class="chart-wrap wide-chart"><canvas id="barChart"></canvas></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="workflow-panel panel" aria-labelledby="workflowTitle">
+            <div class="panel-heading">
+              <div><span class="eyebrow">RESPONSE FLOW</span><h2 id="workflowTitle">안전한 조치 절차</h2></div>
+              <span class="section-note">최종 발송 전 관리자 승인</span>
+            </div>
+            <ol class="workflow-list">
+              <li class="is-done"><span>1</span><div><strong>측정 데이터 수집</strong><small>소음·진동 동시 기록</small></div></li>
+              <li class="is-done"><span>2</span><div><strong>AI 패턴 분석</strong><small>발생 유형과 주기 확인</small></div></li>
+              <li class="is-current"><span>3</span><div><strong>관리자 판단</strong><small>사실관계와 대상 검토</small></div></li>
+              <li><span>4</span><div><strong>안내 및 기록</strong><small>승인 후 발송·이력 저장</small></div></li>
+            </ol>
+          </section>
+        </section>
+
+        <section class="view report-view" id="reportView" aria-labelledby="reportTitle">
+          <button class="back-button" type="button" id="backToDashboard">← 통합 현황으로 돌아가기</button>
+          <div class="report-heading">
+            <div>
+              <span class="eyebrow alert">AI INCIDENT REPORT</span>
+              <h1 id="reportTitle">심층 데이터 분석</h1>
+              <p>측정 사실과 AI 해석을 분리해 검토한 뒤 조치 여부를 결정합니다.</p>
+            </div>
+            <div class="report-targets">
+              <span><i class="target-dot blue"></i>측정 세대 <strong id="targetUnit">202동 503호</strong></span>
+              <span><i class="target-dot amber"></i>추정 영향 세대 <strong id="causeUnit">202동 603호</strong></span>
+            </div>
+          </div>
+
+          <div class="review-banner">
+            <span class="review-icon">!</span>
+            <div><strong>관리자 확인이 필요합니다.</strong><p>AI 분석은 조치 판단을 돕는 참고 정보이며, 위층 세대를 원인으로 확정하지 않습니다.</p></div>
+            <span class="confidence">AI 신뢰도 <b>92%</b></span>
+          </div>
+
+          <div class="report-kpis">
+            <article><span>최고 소음</span><strong id="dispMaxDb">82 <small>dB</small></strong><i class="danger">기준 초과</i></article>
+            <article><span>최고 진동</span><strong id="dispMaxVib">2.10 <small>mg</small></strong><i class="warning">동시 감지</i></article>
+            <article><span>주요 주파수</span><strong id="dispFreq">120 <small>Hz 이하</small></strong><i class="violet">저주파</i></article>
+            <article><span>반복 발생</span><strong>12 <small>회</small></strong><i class="neutral">58초간</i></article>
+          </div>
+
+          <div class="report-grid">
+            <article class="panel evidence-panel">
+              <div class="panel-heading">
+                <div><span class="eyebrow">MEASURED FACTS</span><h2>소음·진동 동시 측정값</h2></div>
+                <div class="chart-legend"><span><i class="blue"></i>소음(dB)</span><span><i class="red-dash"></i>진동(mg)</span></div>
+              </div>
+              <div class="timeline-chart"><canvas id="realDataChart"></canvas></div>
+              <div class="fact-strip">
+                <span><small>측정 구간</small>23:17:00–23:17:58</span>
+                <span><small>데이터 포인트</small>60개</span>
+                <span><small>동시 피크</small>3회</span>
+              </div>
+            </article>
+
+            <article class="panel interpretation-panel">
+              <div class="panel-heading">
+                <div><span class="eyebrow violet-text">AI INTERPRETATION</span><h2>패턴 해석</h2></div>
+                <span class="ai-chip">✦ AI</span>
+              </div>
+              <div class="interpretation-score">
+                <div><span>저주파 충격 패턴</span><strong>92%</strong></div>
+                <div class="score-track"><i style="width:92%"></i></div>
+              </div>
+              <ul class="finding-list">
+                <li><span>01</span><p><strong>저주파 집중</strong>주요 에너지가 <b id="textFreq">120</b>Hz 이하에 분포합니다.</p></li>
+                <li><span>02</span><p><strong>동시 발생</strong>소음과 진동의 피크 시점이 세 차례 일치합니다.</p></li>
+                <li><span>03</span><p><strong>추정 해석</strong>보행 또는 가구 이동과 유사하지만 현장 확인이 필요합니다.</p></li>
+              </ul>
+              <div class="caution-note"><b>해석 원칙</b> 특정 세대를 원인으로 단정하지 않고, 협조 요청을 위한 참고 자료로만 사용합니다.</div>
+            </article>
+          </div>
+
+          <article class="panel action-review">
+            <div class="action-review-head">
+              <div><span class="eyebrow">HUMAN REVIEW</span><h2>안내문 검토 및 승인</h2></div>
+              <span class="draft-status">임시 저장</span>
+            </div>
+            <div class="letter-layout">
+              <div class="letter-meta">
+                <dl>
+                  <div><dt>수신 대상</dt><dd id="letterTo">202동 603호 거주자</dd></div>
+                  <div><dt>참조</dt><dd>공동주택 관리사무소</dd></div>
+                  <div><dt>안내 유형</dt><dd>이웃 배려 협조 요청</dd></div>
+                  <div><dt>발송 방식</dt><dd>관리자 승인 후 선택</dd></div>
+                </dl>
+                <label class="check-row"><input type="checkbox" id="factCheck"><span>측정 수치와 시간대를 확인했습니다.</span></label>
+                <label class="check-row"><input type="checkbox" id="targetCheck"><span>대상 세대와 표현을 확인했습니다.</span></label>
+              </div>
+              <div class="letter-preview">
+                <span>안내문 미리보기</span>
+                <h3>평온한 주거 환경을 위한 협조 요청</h3>
+                <p>안녕하세요. 공동주택 관리사무소입니다.</p>
+                <p>야간 시간대에 아래층 측정 장치에서 최대 <strong><b id="textMaxDb">82</b>dB</strong>의 충격성 소음과 최대 <strong><b id="textMaxVib">2.10</b>mg</strong>의 미세 진동이 함께 감지되었습니다.</p>
+                <p>측정값은 생활 소음의 영향을 확인하기 위한 참고 자료이며 특정 세대를 원인으로 확정하지 않습니다. 이웃의 평온한 휴식을 위해 야간 보행과 가구 이동 시 조금 더 배려해 주시기를 부탁드립니다.</p>
+                <p>감사합니다.<br>공동주택 관리사무소 드림</p>
+              </div>
+            </div>
+            <div class="approval-bar">
+              <p><strong>현재는 데모 모드입니다.</strong> 승인해도 실제 안내문이나 알림은 전송되지 않습니다.</p>
+              <button class="secondary-button" type="button" id="saveDraft">초안 저장</button>
+              <button class="primary-button approve" type="button" id="approveDraft" disabled>검토 완료 및 발송 승인</button>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="sidebar-scrim" id="sidebarScrim"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script id="initialReports" type="application/json">{{ reports | tojson }}</script>
+</body>
+</html>
