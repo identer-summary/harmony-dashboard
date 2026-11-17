@@ -4,8 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#08120f">
-  <meta name="description" content="Harmony Watcher 공동주택 층간소음 통합 관제 센터">
-  <title>Harmony Watcher · 통합 관제 센터</title>
+  <meta name="description" content="Harmony Control 공동주택 층간소음 통합 관제 센터">
+  <title>Harmony Control · 통합 관제 센터</title>
+  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/harmony-logo.jpeg') }}">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
@@ -14,13 +15,13 @@
 <body data-demo-mode="{{ 'true' if demo_mode else 'false' }}">
   <div class="app-shell">
     <aside class="sidebar" id="sidebar" aria-label="주요 메뉴">
-      <a class="brand" href="#overview" aria-label="Harmony Watcher 홈">
+      <a class="brand" href="#overview" aria-label="Harmony Control 홈">
         <span class="brand-mark" aria-hidden="true">
-          <span></span><span></span><span></span>
+          <img src="{{ url_for('static', filename='images/harmony-logo.jpeg') }}" alt="">
         </span>
         <span class="brand-copy">
           <strong>Harmony</strong>
-          <small>WATCHER</small>
+          <small>CONTROL</small>
         </span>
       </a>
 
@@ -63,7 +64,7 @@
           <span class="nav-icon" aria-hidden="true">⚙</span>
           <span>환경 설정</span>
         </button>
-        <p>Harmony Solution<br>Control Center v2.0</p>
+        <p>Harmony Control<br>Management Center v2.0</p>
       </div>
     </aside>
 
@@ -91,7 +92,7 @@
         <section class="view is-active" id="dashboardView" aria-labelledby="overviewTitle">
           <div class="page-heading" id="overview">
             <div>
-              <span class="eyebrow">HARMONY CONTROL CENTER</span>
+              <span class="eyebrow">HARMONY CONTROL</span>
               <h1 id="overviewTitle">공간의 평온을 지키는<br><em>실시간 관제 현황</em></h1>
               <p>소음과 미세 진동을 함께 분석해 이상 징후와 필요한 조치를 한눈에 확인합니다.</p>
             </div>
@@ -285,15 +286,33 @@
           <div class="report-grid">
             <article class="panel evidence-panel">
               <div class="panel-heading">
-                <div><span class="eyebrow">MEASURED FACTS</span><h2>소음·진동 동시 측정값</h2></div>
-                <div class="chart-legend"><span><i class="blue"></i>소음(dB)</span><span><i class="red-dash"></i>진동(mg)</span></div>
+                <div><span class="eyebrow">MEASURED FACTS</span><h2>측정 데이터 상세 보기</h2></div>
+                <span class="measured-period">60초 측정 · 600개 원본값</span>
               </div>
-              <div class="timeline-chart"><canvas id="realDataChart"></canvas></div>
-              <div class="fact-strip">
-                <span><small>측정 구간</small>23:17:00–23:17:58</span>
-                <span><small>데이터 포인트</small>60개</span>
-                <span><small>동시 피크</small>3회</span>
+
+              <div class="measured-tabs" role="tablist" aria-label="측정 데이터 항목">
+                <button class="measured-tab is-active" id="measuredTabNoise" type="button" role="tab" aria-selected="true" aria-controls="measuredTabPanel" data-fact-tab="noise"><span>dB</span>소음</button>
+                <button class="measured-tab" id="measuredTabVibration" type="button" role="tab" aria-selected="false" aria-controls="measuredTabPanel" data-fact-tab="vibration" tabindex="-1"><span>g</span>진동</button>
+                <button class="measured-tab" id="measuredTabFrequency" type="button" role="tab" aria-selected="false" aria-controls="measuredTabPanel" data-fact-tab="frequency" tabindex="-1"><span>Hz</span>주파수</button>
               </div>
+
+              <div class="measured-tabpanel" id="measuredTabPanel" role="tabpanel" aria-labelledby="measuredTabNoise" aria-live="polite">
+                <div class="measured-chart-heading">
+                  <div>
+                    <span>CSV 측정 데이터</span>
+                    <h3 id="factChartTitle">소음 변화 추이 (dB)</h3>
+                  </div>
+                  <p id="factChartDescription">600개 측정값을 1초 단위 최고값으로 정리했습니다.</p>
+                </div>
+                <div class="timeline-chart"><canvas id="realDataChart" aria-label="60초 동안 측정한 소음 변화 그래프"></canvas></div>
+                <div class="fact-strip">
+                  <span><small id="factMetricLabel0">측정 구간</small><strong id="factMetricValue0">21:13:44–21:14:43</strong></span>
+                  <span><small id="factMetricLabel1">데이터 포인트</small><strong id="factMetricValue1">600개</strong></span>
+                  <span><small id="factMetricLabel2">최고 소음</small><strong id="factMetricValue2">79 dB</strong></span>
+                  <span><small id="factMetricLabel3">57 dB 이상</small><strong id="factMetricValue3">20회</strong></span>
+                </div>
+              </div>
+              <p class="measured-source-note">2026년 11월 8일 측정 샘플을 바탕으로 구성한 시연 화면입니다. 표시값은 공인 측정 결과가 아닌 서비스 검증용 참고자료입니다.</p>
             </article>
 
             <article class="panel interpretation-panel">

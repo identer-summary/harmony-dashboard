@@ -8,11 +8,46 @@
   let barChart = null;
   let detailChart = null;
   let currentOpenUnit = null;
+  let currentFactTab = "noise";
   let toastTimer = null;
 
-  const fallbackNoise = [77, 77, 72, 72, 66, 66, 63, 63, 66, 66, 66, 66, 64, 64, 52, 52, 54, 54, 46, 66, 77, 77, 82, 82, 72, 59, 59, 43, 43, 55, 55, 64, 64, 64, 64, 77, 77, 73, 73, 70, 70, 61, 61, 57, 54, 54, 59, 59, 17, 48, 50, 50, 46, 52, 52, 52, 45, 45, 54, 54];
-  const fallbackVibration = [2.0, 2.0, 1.0, 1.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0];
+  const fallbackNoise = [70, 61, 45, 41, 43, 43, 34, 37, 37, 28, 19, 19, 21, 21, 37, 37, 45, 45, 32, 32, 25, 19, 48, 48, 39, 64, 64, 46, 46, 43, 25, 25, 25, 36, 36, 32, 30, 32, 32, 32, 34, 41, 41, 41, 41, 45, 70, 70, 79, 79, 30, 27, 21, 21, 23, 23, 21, 21, 19, 19];
+  const fallbackVibration = [0.002, 0.002, 0.001, 0.001, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.001, 0.001, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.001, 0.001, 0.001, 0.001, 0.002, 0.002, 0.002, 0.001, 0.002, 0.001, 0.002, 0.002, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.002, 0.002, 0.002, 0.002, 0.002, 0.001, 0.001, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.001];
   const fallbackTime = fallbackNoise.map((_, index) => `${index}초`);
+  const fallbackFrequencyBins = [
+    { hz: 0, count: 75 }, { hz: 20, count: 75 }, { hz: 40, count: 6 },
+    { hz: 60, count: 4 }, { hz: 80, count: 6 }, { hz: 100, count: 4 },
+    { hz: 120, count: 2 }, { hz: 140, count: 0 }, { hz: 160, count: 0 },
+    { hz: 180, count: 0 }, { hz: 200, count: 0 }, { hz: 220, count: 0 },
+    { hz: 240, count: 0 }, { hz: 260, count: 0 }, { hz: 280, count: 0 },
+    { hz: 300, count: 0 }, { hz: 320, count: 0 }, { hz: 340, count: 0 },
+    { hz: 360, count: 0 }, { hz: 380, count: 0 }, { hz: 400, count: 0 },
+    { hz: 420, count: 2 }, { hz: 440, count: 0 }, { hz: 460, count: 2 },
+  ];
+
+  const measuredFactTabs = {
+    noise: {
+      tabId: "measuredTabNoise",
+      title: "소음 변화 추이 (dB)",
+      description: "600개 측정값을 1초 단위 최고값으로 정리했습니다.",
+      ariaLabel: "60초 동안 측정한 소음 변화 그래프",
+      metrics: [["측정 구간", "21:13:44–21:14:43"], ["데이터 포인트", "600개"], ["최고 소음", "79 dB"], ["57 dB 이상", "20회"]],
+    },
+    vibration: {
+      tabId: "measuredTabVibration",
+      title: "진동 변화 추이 (g)",
+      description: "미세한 변화가 보이도록 0–0.002g 구간을 확대했습니다.",
+      ariaLabel: "60초 동안 측정한 진동 변화 그래프",
+      metrics: [["측정 구간", "21:13:44–21:14:43"], ["데이터 포인트", "600개"], ["평균 진동", "0.001 g"], ["최고 진동", "0.002 g"]],
+    },
+    frequency: {
+      tabId: "measuredTabFrequency",
+      title: "주파수 스펙트럼 분석 (Hz)",
+      description: "감지된 주파수를 20Hz 구간별로 집계했습니다.",
+      ariaLabel: "측정된 주파수를 20헤르츠 단위로 집계한 막대 그래프",
+      metrics: [["감지 데이터", "176개"], ["주요 대역", "150 Hz 이하"], ["주요 대역 비율", "97.7%"], ["최고 주파수", "460 Hz"]],
+    },
+  };
 
   function byId(id) {
     return document.getElementById(id);
@@ -226,74 +261,135 @@
 
   function reportPlot(data) {
     if (Array.isArray(data?.measurements) && data.measurements.length) {
+      const frequencies = data.measurements.map((item) => Number(item.frequency || 0));
       return {
         noise: data.measurements.map((item) => Number(item.noise || 0)),
-        vibration: data.measurements.map((item) => Number(item.vibration || 0) * 1000),
+        vibration: data.measurements.map((item) => Number(item.vibration || 0)),
+        frequency: frequencyHistogram(frequencies),
         time: data.measurements.map((item) => item.time || ""),
       };
     }
-    return { noise: fallbackNoise, vibration: fallbackVibration, time: fallbackTime };
+    return { noise: fallbackNoise, vibration: fallbackVibration, frequency: fallbackFrequencyBins, time: fallbackTime };
   }
 
-  function renderDetailChart(data) {
+  function frequencyHistogram(values) {
+    const bins = Array.from({ length: 24 }, (_, index) => ({ hz: index * 20, count: 0 }));
+    values.forEach((value) => {
+      if (!Number.isFinite(value) || value <= 0) return;
+      const index = Math.min(Math.floor(value / 20), bins.length - 1);
+      bins[index].count += 1;
+    });
+    return bins;
+  }
+
+  function measuredGradient(context, stops) {
+    const gradient = context.createLinearGradient(0, 0, 0, 330);
+    stops.forEach(([offset, color]) => gradient.addColorStop(offset, color));
+    return gradient;
+  }
+
+  function updateMeasuredFactCopy(tab) {
+    const meta = measuredFactTabs[tab];
+    setText("factChartTitle", meta.title);
+    setText("factChartDescription", meta.description);
+    meta.metrics.forEach(([label, value], index) => {
+      setText(`factMetricLabel${index}`, label);
+      setText(`factMetricValue${index}`, value);
+    });
+
+    const panel = byId("measuredTabPanel");
+    panel.setAttribute("aria-labelledby", meta.tabId);
+    byId("realDataChart").setAttribute("aria-label", meta.ariaLabel);
+  }
+
+  function renderDetailChart(data, tab = currentFactTab) {
     const plot = reportPlot(data);
+    const canvas = byId("realDataChart");
+    const context = canvas.getContext("2d");
+
+    updateMeasuredFactCopy(tab);
 
     if (detailChart) detailChart.destroy();
-    detailChart = new Chart(byId("realDataChart"), {
+
+    if (tab === "frequency") {
+      detailChart = new Chart(canvas, {
+        type: "bar",
+        data: {
+          labels: plot.frequency.map((item) => `${item.hz}Hz`),
+          datasets: [{
+            label: "감지 횟수",
+            data: plot.frequency.map((item) => item.count),
+            backgroundColor: plot.frequency.map((item) => item.hz <= 140 ? "#f4a048" : "#6f9ba4"),
+            borderRadius: 5,
+            borderSkipped: false,
+            barPercentage: 0.72,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 250 },
+          scales: {
+            x: { grid: { display: false }, ticks: { ...chartTick(), maxRotation: 0, autoSkip: true, maxTicksLimit: 7 }, border: { display: false } },
+            y: { beginAtZero: true, suggestedMax: 75, grid: chartGrid(), ticks: { ...chartTick(), stepSize: 25 }, border: { display: false }, title: { display: true, text: "감지 횟수", color: "#647a70", font: { size: 8 } } },
+          },
+          plugins: { legend: { display: false }, tooltip: { backgroundColor: "#172a22", padding: 10 } },
+        },
+      });
+      return;
+    }
+
+    const isNoise = tab === "noise";
+    const values = isNoise ? plot.noise : plot.vibration;
+    const stroke = isNoise
+      ? measuredGradient(context, [[0, "#ff4b55"], [0.34, "#ffb22e"], [0.58, "#f2db35"], [1, "#42d884"]])
+      : measuredGradient(context, [[0, "#e6ef5b"], [1, "#40d98b"]]);
+    const fill = measuredGradient(context, isNoise
+      ? [[0, "rgba(255,75,85,.46)"], [0.45, "rgba(242,219,53,.26)"], [1, "rgba(64,217,139,.08)"]]
+      : [[0, "rgba(230,239,91,.28)"], [1, "rgba(64,217,139,.05)"]]);
+    const datasets = [{
+      label: isNoise ? "소음 (dB)" : "진동 (g)",
+      data: values,
+      borderColor: stroke,
+      backgroundColor: fill,
+      borderWidth: 2.4,
+      pointRadius: 0,
+      fill: true,
+      tension: 0.22,
+    }];
+
+    if (isNoise) {
+      datasets.push(
+        { label: "심각 기준 57 dB", data: values.map(() => 57), borderColor: "#ff6f66", backgroundColor: "transparent", borderWidth: 1.2, borderDash: [7, 7], pointRadius: 0, fill: false, tension: 0 },
+        { label: "주의 기준 39 dB", data: values.map(() => 39), borderColor: "#e0bc34", backgroundColor: "transparent", borderWidth: 1.2, borderDash: [7, 7], pointRadius: 0, fill: false, tension: 0 },
+      );
+    } else {
+      datasets.push({ label: "참고 기준 0.002 g", data: values.map(() => 0.002), borderColor: "#e0bc34", backgroundColor: "transparent", borderWidth: 1.2, borderDash: [7, 7], pointRadius: 0, fill: false, tension: 0 });
+    }
+
+    detailChart = new Chart(canvas, {
       type: "line",
-      data: {
-        labels: plot.time,
-        datasets: [
-          {
-            label: "소음 (dB)",
-            data: plot.noise,
-            borderColor: "#62b5ff",
-            backgroundColor: "rgba(98, 181, 255, 0.09)",
-            yAxisID: "y",
-            borderWidth: 2,
-            pointRadius: 0,
-            fill: true,
-            tension: 0.22,
-          },
-          {
-            label: "미세진동 (mg)",
-            data: plot.vibration,
-            borderColor: "#ff6f66",
-            yAxisID: "y1",
-            borderWidth: 1.5,
-            pointRadius: 0,
-            borderDash: [4, 5],
-            tension: 0.12,
-          },
-        ],
-      },
+      data: { labels: plot.time, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 250 },
         interaction: { mode: "index", intersect: false },
         scales: {
-          x: { grid: { display: false }, ticks: { ...chartTick(), maxTicksLimit: 10, maxRotation: 0 }, border: { display: false } },
+          x: { grid: { display: false }, ticks: { ...chartTick(), maxTicksLimit: 5, maxRotation: 0 }, border: { display: false } },
           y: {
-            position: "left",
-            suggestedMin: 10,
-            suggestedMax: 90,
+            beginAtZero: true,
+            suggestedMax: isNoise ? 84 : 0.0024,
             grid: chartGrid(),
-            ticks: { ...chartTick(), stepSize: 20 },
+            ticks: { ...chartTick(), stepSize: isNoise ? 21 : 0.001, callback: (value) => isNoise ? value : Number(value).toFixed(3) },
             border: { display: false },
-            title: { display: true, text: "소음 dB", color: "#647a70", font: { size: 8 } },
-          },
-          y1: {
-            position: "right",
-            suggestedMin: 1,
-            suggestedMax: 3,
-            grid: { display: false },
-            ticks: { ...chartTick(), stepSize: 0.5 },
-            border: { display: false },
-            title: { display: true, text: "진동 mg", color: "#647a70", font: { size: 8 } },
+            title: { display: true, text: isNoise ? "소음 dB" : "진동 g", color: "#647a70", font: { size: 8 } },
           },
         },
-        plugins: { legend: { display: false }, tooltip: { backgroundColor: "#172a22", padding: 10 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: "#172a22", padding: 10, filter: (item) => item.datasetIndex === 0 },
+        },
       },
     });
   }
@@ -318,6 +414,32 @@
     setText("textFreq", formatValue(data.frequency));
 
     renderDetailChart(data);
+  }
+
+  function activateMeasuredFact(tab, shouldFocus = false) {
+    if (!measuredFactTabs[tab]) return;
+    currentFactTab = tab;
+
+    document.querySelectorAll("[data-fact-tab]").forEach((button) => {
+      const isActive = button.dataset.factTab === tab;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-selected", String(isActive));
+      button.tabIndex = isActive ? 0 : -1;
+      if (isActive && shouldFocus) button.focus();
+    });
+
+    renderDetailChart(reports[currentOpenUnit] || reports["202-503"], tab);
+  }
+
+  function moveMeasuredFactTab(event, index, buttons) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? buttons.length - 1
+        : (index + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
+    activateMeasuredFact(buttons[nextIndex].dataset.factTab, true);
   }
 
   function setActiveNav(action) {
@@ -379,6 +501,11 @@
   function attachEvents() {
     byId("lineSelect").addEventListener("change", renderGrid);
     byId("backToDashboard").addEventListener("click", closeReport);
+    const measuredTabs = Array.from(document.querySelectorAll("[data-fact-tab]"));
+    measuredTabs.forEach((button, index) => {
+      button.addEventListener("click", () => activateMeasuredFact(button.dataset.factTab));
+      button.addEventListener("keydown", (event) => moveMeasuredFactTab(event, index, measuredTabs));
+    });
     document.querySelectorAll("[data-open-report]").forEach((button) => {
       button.addEventListener("click", () => openReport(button.dataset.openReport));
     });
