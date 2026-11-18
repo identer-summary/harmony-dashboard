@@ -113,21 +113,22 @@ a:focus-visible {
 .brand-copy {
   display: flex;
   flex-direction: column;
+  gap: 4px;
   line-height: 1;
 }
 
-.brand-copy strong {
-  font-size: 18px;
-  letter-spacing: -0.03em;
+.brand-copy strong,
+.brand-copy small {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
-.brand-copy small {
-  margin-top: 5px;
-  color: var(--mint);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.23em;
-}
+.brand-copy strong { color: #ffffff; }
+.brand-copy small { margin: 0; color: var(--mint); }
 
 .site-card {
   margin: 27px 0 22px;

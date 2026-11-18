@@ -1,4 +1,4 @@
-# Harmony Control Dashboard
+# Harmony Bridge Dashboard
 
 공동주택 층간소음의 소음·진동 데이터를 확인하고, 이상 패턴을 검토한 뒤 관리 조치를 결정하기 위한 관제 화면입니다.
 
