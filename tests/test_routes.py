@@ -11,7 +11,7 @@ class DashboardRoutesTest(unittest.TestCase):
     def test_dashboard_renders(self):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Harmony Control".encode(), response.data)
+        self.assertIn("Harmony Bridge".encode(), response.data)
         self.assertIn("MEASURED FACTS".encode(), response.data)
         self.assertIn("data-fact-tab=\"frequency\"".encode(), response.data)
 
